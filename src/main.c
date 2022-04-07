@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include "stack.h"
 
+#define BUFFER_SIZE 1024
+#define N_REGISTERS 256
+
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 1
 #define VERSION_PATCH 0
@@ -17,6 +20,7 @@
     mpz_inits(lhs, rhs, NULL); \
     stack_pop(stack, rhs); \
     stack_pop(stack, lhs);
+#define read_reg(registers, buffer, offset) &registers[(size_t)((unsigned char*)buffer)[++offset]]
 
 void divide(mpz_t numerator, mpz_t denominator, mpz_t modulus) {
     mpz_t v1, v2;
@@ -148,7 +152,7 @@ void mod_sqrt(mpz_t value, mpz_t modulus) {
     mpz_clear(tmp);
 }
 
-void handle_line(mpz_stack_t* stack, char* buffer) {
+void handle_line(mpz_stack_t* stack, mpz_stack_t registers[N_REGISTERS], char* buffer) {
     size_t offset = 0;
     while (buffer[offset]) {
         // printf("%c", buffer[offset]);
@@ -316,6 +320,54 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
         } else if (buffer[offset] == '#') {
             // TODO: handle cases where the line length exceeds BUFFER_SIZE
             while (buffer[offset] && buffer[offset] != '\n') offset += 1;
+        } else if (buffer[offset] == 's') {
+            mpz_stack_t* reg = read_reg(registers, buffer, offset);
+
+            mpz_t number;
+            mpz_init(number);
+            stack_pop(stack, number);
+
+            if (reg->length == 0) reg->length = 1;
+
+            mpz_set(reg->buffer[reg->length - 1], number);
+
+            mpz_clear(number);
+        } else if (buffer[offset] == 'l') {
+            mpz_stack_t* reg = read_reg(registers, buffer, offset);
+
+            mpz_t number;
+            mpz_init(number);
+
+            if (reg->length > 0) {
+                mpz_set(number, reg->buffer[reg->length - 1]);
+            }
+            stack_push(stack, number);
+
+            mpz_clear(number);
+        } else if (buffer[offset] == 'S') {
+            mpz_stack_t* reg = read_reg(registers, buffer, offset);
+
+            mpz_t number;
+            mpz_init(number);
+            stack_pop(stack, number);
+
+            stack_push(reg, number);
+
+            mpz_clear(number);
+        } else if (buffer[offset] == 'L') {
+            mpz_stack_t* reg = read_reg(registers, buffer, offset);
+
+            mpz_t number;
+            mpz_init(number);
+
+            if (reg->length > 0) {
+                stack_pop(reg, number);
+                stack_push(stack, number);
+            } else {
+                eprintf("Register %c (%d) is empty!\n", buffer[offset], ((unsigned char*)buffer)[offset]);
+            }
+
+            mpz_clear(number);
         }
 
         offset += 1;
@@ -325,7 +377,11 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
 
 int main(int argc, char* argv[]) {
     mpz_stack_t stack = new_stack(10);
-    #define BUFFER_SIZE 1024
+    mpz_stack_t registers[N_REGISTERS];
+    for (size_t n = 0; n < N_REGISTERS; n++) {
+        registers[n] = new_stack(1);
+    }
+
     char buffer[BUFFER_SIZE] = {0,};
 
     if (argc >= 2) {
@@ -346,7 +402,7 @@ int main(int argc, char* argv[]) {
         int status = read(STDIN_FILENO, buffer, BUFFER_SIZE - 1);
         if (status > 0) {
             buffer[status] = 0;
-            handle_line(&stack, buffer);
+            handle_line(&stack, registers, buffer);
         } else {
             break;
         }

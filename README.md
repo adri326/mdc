@@ -26,8 +26,13 @@ The supported operations are:
 - `n`: pops a number from the stack and prints it, without a newline
 - `c`: clears the stack
 - `r`: swaps the position of the top two values of the stack
+- `s<r>`: pops `x` from the stack and stores in on the top of the register `<r>` (overriding the previous value)
+- `S<r>`: pops `x` from the stack and pushes it on top of the register `<r>`'s stack (shadowing the previous value)
+- `l<r>`: pushes on the stack the top value of the register `<r>`
+- `L<r>`: pops `x` from the stack of the register `<r>` and pushes it onto the stack (un-shadowing values below it)
 
 Spaces are optional, except between numbers.
+I really recommend reading through [`dc`'s documentation](https://linux.die.net/man/1/dc) if you aren't somewhat familiar with it already.
 
 ## Installation
 
