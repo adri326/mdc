@@ -1,6 +1,6 @@
 CC = clang
 
-CC_FLAGS += -Wall -Wextra
+CC_FLAGS += -Wall -Wextra -g
 LINK_FLAGS += -lgmp
 BUILD_DIR = build
 SRC_DIR = src
