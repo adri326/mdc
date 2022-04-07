@@ -2,7 +2,7 @@
 
 A re-implementation of the [GNU program `dc`](https://linux.die.net/man/1/dc), in modular arithmetic.
 
-As of right now, strings, registers, arrays and macros aren't implemented.
+As of right now, strings, arrays and macros aren't implemented.
 
 The supported operations are:
 
@@ -89,6 +89,22 @@ lp1-lq1-Cm # Compute λ(n) and use it as modulo
 lnm # Use n as modulo
 36762444129608 le ^p # Encode the message with (n, e); here the message is the decimal version of "Hello!"
 ld ^p # Decode the message
+```
+
+For comparison, here is how you would have to do it using vanilla `dc`:
+
+```sh
+2010942103422233250095259520183 sp # p
+3503815992030544427564583819137 sq # q
+lplq*p sn # n
+lp1- lq1- # Load p-1 and q-1
+[dSarLa%d0<a]dsax+ # Compute gcd(p-1, q-1), thank you Wikipedia for the expression
+lp1- lq1- *r/ sl # Compute λ(n) and store it
+2 16^ 1+ d se # e = 2^16+1
+lldsm le dsa1sv[dsb~rsqlbrldlqlv*-lvsdsvd0<x]dsxxldd[dlmr+]sx0>x p sd # Computes d = e^-1 mod λ(n), thanks Rosetta stone for this expression
+
+36762444129608 le ln |p # Encode the message with (n, e); here the message is the decimal version of "Hello!"
+ld ln |p # Decode the message
 ```
 
 ## Warranty

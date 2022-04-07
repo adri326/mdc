@@ -1,0 +1,10 @@
+2010942103422233250095259520183 sp # p
+3503815992030544427564583819137 sq # q
+lplq*p sn # n
+lp1-lq1-Cm # Compute λ(n) and use it as modulo
+2 16^ 1+ d se # e = 2^16+1
+1r/p sd # d = e^-1 mod λ(n)
+
+lnm # Use n as modulo
+36762444129608 le ^p # Encode the message with (n, e); here the message is the decimal version of "Hello!"
+ld ^p # Decode the message

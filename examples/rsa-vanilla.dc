@@ -1,0 +1,11 @@
+2010942103422233250095259520183 sp # p
+3503815992030544427564583819137 sq # q
+lplq*p sn # n
+lp1- lq1- # Load p-1 and q-1
+[dSarLa%d0<a]dsax+ # Compute gcd(p-1, q-1), thank you wikipedia for the expression
+lp1- lq1- *r/ sl # Compute λ(n) and store it
+2 16^ 1+ d se # e = 2^16+1
+lldsm le dsa1sv[dsb~rsqlbrldlqlv*-lvsdsvd0<x]dsxxldd[dlmr+]sx0>x p sd # Computes d = e^-1 mod λ(n), thanks Rosetta stone for this expression
+
+36762444129608 le ln |p # Encode the message with (n, e); here the message is the decimal version of "Hello!"
+ld ln |p # Decode the message
