@@ -7,6 +7,10 @@
 #include <unistd.h>
 #include "stack.h"
 
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 1
+#define VERSION_PATCH 0
+
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 #define twoop(lhs, rhs) \
     mpz_t lhs, rhs; \
@@ -148,8 +152,9 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
     size_t offset = 0;
     while (buffer[offset]) {
         // printf("%c", buffer[offset]);
-        if (buffer[offset] >= '0' && buffer[offset] <= '9') {
-            size_t number_start = offset;
+        if ((buffer[offset] >= '0' && buffer[offset] <= '9') || buffer[offset] == '_') {
+            bool negative = buffer[offset] == '_';
+            size_t number_start = offset + negative;
             offset += 1;
             while (buffer[offset] >= '0' && buffer[offset] <= '9') offset += 1;
 
@@ -160,6 +165,7 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
             mpz_t number;
             mpz_init(number);
             mpz_set_str(number, number_raw, 10);
+            if (negative) mpz_neg(number, number);
             stack_push(stack, number);
             mpz_clear(number);
 
@@ -186,16 +192,16 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
             mpz_init(number);
             stack_pop(stack, number);
 
-            mpz_set(stack->modulo, number);
+            mpz_set(stack->modulus, number);
 
             mpz_clear(number);
         } else if (buffer[offset] == 'M') {
-            stack_push(stack, stack->modulo);
+            stack_push(stack, stack->modulus);
         } else if (buffer[offset] == '+') {
             twoop(lhs, rhs);
             mpz_add(lhs, lhs, rhs);
-            if (mpz_sgn(stack->modulo) > 0) {
-                mpz_mod(lhs, lhs, stack->modulo);
+            if (mpz_sgn(stack->modulus) > 0) {
+                mpz_mod(lhs, lhs, stack->modulus);
             }
             stack_push(stack, lhs);
             mpz_clears(lhs, rhs, NULL);
@@ -203,31 +209,31 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
             mpz_t number;
             mpz_init(number);
             stack_pop(stack, number);
-            mpz_mod(number, number, stack->modulo);
+            mpz_mod(number, number, stack->modulus);
             stack_push(stack, number);
             mpz_clear(number);
         } else if (buffer[offset] == '-') {
             twoop(lhs, rhs);
             mpz_sub(lhs, lhs, rhs);
-            if (mpz_sgn(stack->modulo) > 0) {
-                mpz_mod(lhs, lhs, stack->modulo);
+            if (mpz_sgn(stack->modulus) > 0) {
+                mpz_mod(lhs, lhs, stack->modulus);
             }
             stack_push(stack, lhs);
             mpz_clears(lhs, rhs, NULL);
         } else if (buffer[offset] == '*') {
             twoop(lhs, rhs);
             mpz_mul(lhs, lhs, rhs);
-            if (mpz_sgn(stack->modulo) > 0) {
-                mpz_mod(lhs, lhs, stack->modulo);
+            if (mpz_sgn(stack->modulus) > 0) {
+                mpz_mod(lhs, lhs, stack->modulus);
             }
             stack_push(stack, lhs);
             mpz_clears(lhs, rhs, NULL);
         } else if (buffer[offset] == '/') {
             twoop(lhs, rhs);
 
-            if (mpz_sgn(stack->modulo) > 0) {
-                divide(lhs, rhs, stack->modulo);
-                mpz_mod(lhs, lhs, stack->modulo);
+            if (mpz_sgn(stack->modulus) > 0) {
+                divide(lhs, rhs, stack->modulus);
+                mpz_mod(lhs, lhs, stack->modulus);
             } else {
                 mpz_fdiv_q(lhs, lhs, rhs);
             }
@@ -237,8 +243,8 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
         } else if (buffer[offset] == '^') {
             twoop(lhs, rhs);
 
-            if (mpz_sgn(stack->modulo) > 0) {
-                mpz_powm(lhs, lhs, rhs, stack->modulo);
+            if (mpz_sgn(stack->modulus) > 0) {
+                mpz_powm(lhs, lhs, rhs, stack->modulus);
             } else {
                 if (mpz_fits_ulong_p(rhs)) {
                     mpz_pow_ui(lhs, lhs, mpz_get_ui(rhs));
@@ -270,8 +276,8 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
         } else if (buffer[offset] == 'r') {
             // reverse
             twoop(lhs, rhs);
-            stack_push(stack, lhs);
             stack_push(stack, rhs);
+            stack_push(stack, lhs);
             mpz_clears(lhs, rhs, NULL);
         } else if (buffer[offset] == 'd') {
             stack_push(stack, stack->buffer[stack->length - 1]);
@@ -288,7 +294,7 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
             mpz_init(number);
             stack_pop(stack, number);
 
-            mod_sqrt(number, stack->modulo);
+            mod_sqrt(number, stack->modulus);
 
             stack_push(stack, number);
 
@@ -298,11 +304,18 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
             mpz_init(number);
             stack_pop(stack, number);
 
-            mpz_mod(number, number, stack->modulo);
-            mpz_sub(number, stack->modulo, number);
+            if (mpz_sgn(stack->modulus) > 0) {
+                mpz_mod(number, number, stack->modulus);
+                mpz_sub(number, stack->modulus, number);
+            } else {
+                mpz_neg(number, number);
+            }
 
             stack_push(stack, number);
             mpz_clear(number);
+        } else if (buffer[offset] == '#') {
+            // TODO: handle cases where the line length exceeds BUFFER_SIZE
+            while (buffer[offset] && buffer[offset] != '\n') offset += 1;
         }
 
         offset += 1;
@@ -310,10 +323,24 @@ void handle_line(mpz_stack_t* stack, char* buffer) {
     fflush(stdout);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     mpz_stack_t stack = new_stack(10);
     #define BUFFER_SIZE 1024
     char buffer[BUFFER_SIZE] = {0,};
+
+    if (argc >= 2) {
+        for (int n = 1; n < argc; n++) {
+            if (
+                strcmp(argv[n], "-v") == 0
+                || strcmp(argv[n], "--version") == 0
+            ) {
+                printf("mdc %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+                printf("\nCopyright 2021 Shad Amethyst\n");
+                printf("This is free software, see the source code license for more information.\n");
+                return 0;
+            }
+        }
+    }
 
     while (true) {
         int status = read(STDIN_FILENO, buffer, BUFFER_SIZE - 1);

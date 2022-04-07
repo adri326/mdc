@@ -8,7 +8,7 @@ struct mpz_stack {
     size_t alloc;
     size_t length;
 
-    mpz_t modulo;
+    mpz_t modulus;
 };
 typedef struct mpz_stack mpz_stack_t;
 
