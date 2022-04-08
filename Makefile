@@ -1,4 +1,10 @@
-CC_FLAGS += -Wall -Wextra -g
+CC_FLAGS += -Wall -Wextra
+ifdef DEBUG
+CC_FLAGS += -g
+else
+CC_FLAGS += -O3
+endif
+
 LINK_FLAGS += -lgmp
 BUILD_DIR = build
 SRC_DIR = src
