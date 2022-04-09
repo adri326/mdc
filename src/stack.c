@@ -8,7 +8,6 @@ mpz_stack_t new_stack(size_t alloc) {
         .alloc = alloc
     };
     res.buffer = malloc(sizeof(mpz_t) * alloc);
-    mpz_init(res.modulus);
 
     for (size_t n = 0; n < alloc; n++) {
         mpz_init(res.buffer[n]);
@@ -21,7 +20,6 @@ void free_stack(mpz_stack_t stack) {
     for (size_t n = 0; n < stack.alloc; n++) {
         mpz_clear(stack.buffer[n]);
     }
-    mpz_clear(stack.modulus);
     free(stack.buffer);
 }
 

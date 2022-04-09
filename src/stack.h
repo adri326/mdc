@@ -1,14 +1,13 @@
 #ifndef STACK_H
 #define STACK_H
 
+#include <stdio.h>
 #include <gmp.h>
 
 struct mpz_stack {
     mpz_t* buffer;
     size_t alloc;
     size_t length;
-
-    mpz_t modulus;
 };
 typedef struct mpz_stack mpz_stack_t;
 
